@@ -10,6 +10,7 @@
 
 (define especificacion-lexica
   '(
+    ;; Patrones básicos
     (espacio-blanco (whitespace) skip)
     (comentario ("%" (arbno (not #\newline))) skip)
     (identificador (letter (arbno (or letter digit "?" "$"))) symbol)
@@ -17,8 +18,7 @@
     (numero ("-" digit (arbno digit)) number)
     (numero (digit (arbno digit)"." digit (arbno digit)) number)
     (numero ("-" digit (arbno digit)"." digit (arbno digit)) number)
-    )
-  )
+  ))
 
 
 (define especificacion-gramatical
@@ -60,6 +60,14 @@
     (primitiva ("<") menor-prim)
     (primitiva ("<=") menorigual-prim)
     (primitiva ("==") igual-prim)
+
+    ;; Add to especificacion-gramatical for lists
+    (expresion ("empty") list-empty-exp)
+    (expresion ("cons" "(" expresion expresion ")") cons-exp)
+    (expresion ("length" "(" expresion ")") length-exp)
+    (expresion ("first" "(" expresion ")") first-exp)
+    (expresion ("rest" "(" expresion ")") rest-exp)
+    (expresion ("nth" "(" expresion  expresion ")") nth-exp)
     )
   )
 
@@ -254,6 +262,40 @@
                   (evaluar-expresion exp amb))
                  1)
                )
+
+      ;; Add to evaluar-expresion
+      (list-empty-exp () '())
+      (cons-exp (exp1 exp2)
+                (let ([first-val (evaluar-expresion exp1 amb)]
+                      [second-val (evaluar-expresion exp2 amb)])
+                  (if (list? second-val)
+                      (cons first-val second-val)
+                      (eopl:error "Error: " second-val " no es una lista"))))
+      (length-exp (lst)
+                  (let ([lst-val (evaluar-expresion lst amb)])
+                    (if (list? lst-val)
+                        (length lst-val)
+                        (eopl:error "Error: " lst-val " no es una lista"))))
+      (first-exp (lst)
+                 (let ([lst-val (evaluar-expresion lst amb)])
+                   (if (and (list? lst-val) (not (null? lst-val)))
+                       (car lst-val)
+                       (eopl:error "Error: lista vacía o no es una lista"))))
+      (rest-exp (lst)
+                (let ([lst-val (evaluar-expresion lst amb)])
+                  (if (and (list? lst-val) (not (null? lst-val)))
+                      (cdr lst-val)
+                      (eopl:error "Error: lista vacía o no es una lista"))))
+      (nth-exp (lst n)
+               (let ([lst-val (evaluar-expresion lst amb)]
+                     [n-val (evaluar-expresion n amb)])
+                 (if (and (list? lst-val) 
+                          (number? n-val)
+                          (>= n-val 0)
+                          (< n-val (length lst-val)))
+                     (list-ref lst-val n-val)
+                     (eopl:error "Error: índice fuera de rango o argumentos inválidos"))))
+      
       )
     
 
@@ -328,6 +370,11 @@
              (vector-set! vec pos val)))))
 
 
+
+;; Crear el analizador léxico y sintáctico
+(define scan&parse
+  (sllgen:make-stream-parser especificacion-lexica especificacion-gramatical))
+
 ;;Interpretador
 (define interpretador
   (sllgen:make-rep-loop "-->" evaluar-programa
@@ -335,4 +382,6 @@
                          especificacion-lexica especificacion-gramatical)))
 
 
-(interpretador)
+
+
+(provide scan&parse evaluar-programa interpretador)
