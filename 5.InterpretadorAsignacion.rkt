@@ -31,6 +31,8 @@
     (expresion ("true") true-exp)
     (expresion ("false") false-exp)
     (expresion ("if" expresion "then" expresion "else" expresion) if-exp)
+    ;; gramatica cond
+    (expresion ("cond" (arbno expresion "==>"  expresion) "else" "==>" expresion "end") cond-exp)
     ;;Ligaduras locales
     (expresion ("let" (arbno identificador "=" expresion) "in" expresion) let-exp)
     ;;Fin de condicionales y ligaduras
@@ -71,7 +73,7 @@
     ;; Agregado para listas
     (expresion ("empty") list-empty-exp) ; Lista vacía
     (expresion ("cons" "(" expresion expresion ")") cons-exp) ; Lista no vacía
-    (expresion ("length" "(" expresion ")") length-exp) ; Longitud de lista
+    (expresion ("length" "(" expresion")") length-exp) ; Longitud de lista
     (expresion ("first" "(" expresion ")") first-exp) ; Primer elemento
     (expresion ("rest" "(" expresion ")") rest-exp) ; Resto de lista
     (expresion ("nth" "(" expresion expresion ")") nth-exp) ; N-ésimo elemento
@@ -201,6 +203,23 @@
               (if (evaluar-expresion condicion amb)
                   (evaluar-expresion hace-verdadero amb)
                   (evaluar-expresion hace-falso amb)))
+      (cond-exp (evaluacion_exp retorno_exp else_exp)
+        (letrec 
+          (
+            (expresion_correcta
+              (lambda (caso list_e valor)
+                (cond
+                  [(null? caso) (evaluar-expresion else_exp amb)]
+                  [(and (evaluar-expresion (car caso) amb) (not (equal? (evaluar-expresion (car caso) amb) 0))) (evaluar-expresion (car list_e) amb)]
+                  [else (expresion_correcta (cdr caso) (cdr list_e) valor)]
+                )
+              )
+            )
+          )
+          (expresion_correcta evaluacion_exp retorno_exp else_exp)
+        )
+      )
+      
       (let-exp (ids rands body)
                (let ([lvalues (map (lambda (x) (evaluar-expresion x amb)) rands)])
                  (evaluar-expresion body (ambiente-extendido ids lvalues amb))))
@@ -299,8 +318,7 @@
 
 ;; Crear el analizador léxico y sintáctico
 (define scan&parse
-  (sllgen:make-stream-parser especificacion-lexica especificacion-gramatical))
-
+  (sllgen:make-string-parser especificacion-lexica especificacion-gramatical))
 ;;Interpretador
 (define interpretador
   (sllgen:make-rep-loop "-->" evaluar-programa
@@ -308,8 +326,17 @@
                          especificacion-lexica especificacion-gramatical)))
 
 
-(define exp (scan&parse  "empty"))
-(display exp)
+(define exp (scan&parse  "let x = 2 in 
+       cond 
+         ==(x,1) ==> 1
+         ==(x,2) ==> 2
+         ==(x,3) ==> 4
+         else ==> 9
+       end"))
+;(display exp)
+;(display (evaluar-programa exp))
 ;(interpretador)
-(provide scan&parse evaluar-programa interpretador)
+(provide (all-defined-out)) 
+
+ 
  

@@ -1,21 +1,20 @@
 #lang racket/base
 
-(require rackunit "5.InterpretadorAsignacion.rkt") ; Cambia el nombre si tu archivo tiene otro
-
+(require  rackunit "5.InterpretadorAsignacion.rkt") ; Cambia el nombre si tu archivo tiene otro
 
 ; Test 1: Lista vacía
 (define exp1
   (scan&parse
-    "empty"  
+    "empty"     
   ))
 (define expected-exp1
   '())
-(check-equal? (evaluar-programa exp1) expected-exp1)
+(equal? (evaluar-programa exp1) expected-exp1)
 
 ; Test 2: Construcción de listas
 (define exp2
   (scan&parse
-    "cons (1 cons (2 cons (3 empty)))"
+    "cons (1 cons (2 cons (3 empty)))" 
   ))
 (define expected-exp2
   '(1 2 3)
@@ -25,7 +24,7 @@
 ; Test 3: Longitud de listas
 (define exp3
   (scan&parse
-    "length (cons (1 cons (2 cons (3 empty))))"
+    "length (cons(1 cons (2 cons (3 empty))))"
   ))
 (define expected-exp3
   3
@@ -55,7 +54,7 @@
 ; Test 6: Elemento en posición n
 (define exp6
   (scan&parse
-    "nth (cons (1 cons (2 cons (3 empty))) 2)"
+    "nth (cons (1 cons (2 cons (3 empty))))"
   ))
 (define expected-exp6
   3
